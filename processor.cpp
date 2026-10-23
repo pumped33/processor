@@ -7,18 +7,21 @@
 #include <fcntl.h> 
 #include <unistd.h>  
 #include "stack_test.cpp"
+#include "raylib.h" 
 
 #undef DEBUG_MODE
 
-#define GREEN "\033[32m"
-#define BLUE  "\033[34m"
-#define RED   "\033[31m"
-#define RESET "\033[37m"
+#define TERM_GREEN  "\033[32m"
+#define TERM_BLUE  "\033[34m"
+#define TERM_RED   "\033[31m"
+#define TERM_RESET "\033[37m"
 
-const int NUMBER_REGISTERS     = 4;
-const int MAX_SIZE_FUNC_MEMORY = 10;
-const int MAX_SIZE_RAM         = 2601;
+const int NUMBER_REGISTERS            = 4;
+const int CAPACITY_STACK_CALCULATIONS = 10;
+const int MAX_SIZE_RAM                = 2601;
+const int CAPACITY_STACK_CALL =         10;
 
+#include "enum_commands.h"
 
 // #define DEBUG_PROCESSOR_MODE
 
@@ -28,13 +31,13 @@ const int MAX_SIZE_RAM         = 2601;
     #define ON_DBG_PROC(...) 
 #endif
 
-#include "enum_commands.h"
+// #define TXT_MODE
+
 
 struct file_info_t {
     const char* name_file_in = "";
     int last_buffer_index = 0;
     FILE* ptr_file_in = NULL;
-    commands_t command_type = ERROR_COMMAND; 
     int size_of_file_in = 0;
 };
 
@@ -53,14 +56,14 @@ int size_of_file(file_info_t* file_info);
 int* open_file(file_info_t* file_info, const char* filename);
 
 
-void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
+int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
 //processor command
 void hlt(stack_info_t* stack_info);
 void out(stack_info_t* stack_info);
 void add(stack_info_t* stack_info);
 void sub(stack_info_t* stack_info);
 void div(stack_info_t* stack_info);
-void push(stack_info_t* stack_info, int x);
+void push(stack_info_t* stack_info, processor_stack_t* processor_stack);
 void mul(stack_info_t* stack_info);
 void popr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
 void pushr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
@@ -78,7 +81,9 @@ void squ1rt(stack_info_t* stack_info);
 void power(stack_info_t* stack_info);
 void pushm(stack_info_t* stack_info, processor_stack_t* processor_stack);
 void popm(stack_info_t* stack_info, processor_stack_t* processor_stack);
-void draw(processor_stack_t* processor_stack);
+void drawc(processor_stack_t* processor_stack);
+void draww(processor_stack_t* processor_stack);
+void pop(stack_info_t* stack_info, processor_stack_t* processor_stack);
 
 
 void dump(processor_stack_t* processor_stack, file_info_t* file_info);
@@ -93,9 +98,10 @@ int main(int argc, const char* argv[]) {
         processor_stack.last_buffer_index = file_info.last_buffer_index;
 
         execute_commands(code, &processor_stack ON_DBG_PROC(, &file_info));
+        return 0;
     }
     else {
-        exit(1);
+        return 1;
     }
 }
 
@@ -106,13 +112,19 @@ int* open_file(file_info_t* file_info, const char* filename) {
     size_of_file(file_info);
     int* buffer = (int*)calloc((size_t)(file_info -> size_of_file_in), sizeof(int));
     int elem = 0;
-    while(fscanf(file_info -> ptr_file_in,  "%d", &elem) == 1) {
-        buffer[file_info -> last_buffer_index] = elem;
-        file_info -> last_buffer_index++;
-    }
-    buffer = (int*)realloc(buffer, (file_info -> last_buffer_index + 1) * sizeof(int));
-
-    return buffer;
+    
+    #ifdef TXT_MODE
+        while(fscanf(file_info -> ptr_file_in,  "%d", &elem) == 1) {
+            buffer[file_info -> last_buffer_index] = elem;
+            file_info -> last_buffer_index++;
+        }
+        buffer = (int*)realloc(buffer, (file_info -> last_buffer_index + 1) * sizeof(int));
+    #else
+        int len_buffer = fread(buffer, sizeof(int), file_info -> size_of_file_in, file_info -> ptr_file_in);
+        buffer = (int*)realloc(buffer, len_buffer * sizeof(int));
+        return buffer;
+    #endif 
+    fclose(file_info -> ptr_file_in);
 }
 
 int size_of_file(file_info_t* file_info) {
@@ -123,13 +135,13 @@ int size_of_file(file_info_t* file_info) {
     return 0;
 }
 
-void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info)) { 
+int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info)) { 
 
     stack_info_t stack_info = {};
-    stack_init(&stack_info, 5); 
+    stack_init(&stack_info, CAPACITY_STACK_CALCULATIONS); 
 
     processor_stack -> buffer = buffer;
-    stack_init(&(processor_stack -> stack_func_memory), MAX_SIZE_FUNC_MEMORY);
+    stack_init(&(processor_stack -> stack_func_memory), CAPACITY_STACK_CALL);
     processor_stack -> ram = (int*)calloc(MAX_SIZE_RAM, sizeof(int));
 
 
@@ -137,14 +149,9 @@ void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PRO
 
     while (flag_buffer_not_end) {
 
-        if (processor_stack -> last_buffer_index < processor_stack -> IP) {
-            exit(3);
-        }
+        switch (buffer[processor_stack -> IP] & 0b00011111) {
 
-        switch (buffer[processor_stack -> IP]) {
-
-            case PUSH_COMMAND:  push(&stack_info, buffer[processor_stack  -> IP + 1]);
-                                processor_stack -> IP++;
+            case PUSH_COMMAND:  push(&stack_info, processor_stack);
                                 break;
 
             case ADD_COMMAND:   add(&stack_info);
@@ -163,12 +170,7 @@ void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PRO
                                 flag_buffer_not_end = 0;
                                 break;
 
-            case POPR_COMMAND:  popr(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
-                                processor_stack -> IP++;
-                                break;
-
-            case PUSHR_COMMAND: pushr(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
-                                processor_stack -> IP ++;
+            case POP_COMMAND:   pop(&stack_info, processor_stack);
                                 break;
 
             case MUL_COMMAND:   mul(&stack_info);
@@ -189,7 +191,7 @@ void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PRO
             case JBE_COMMAND:   jbe(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JE_COMMAND:   je(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JE_COMMAND:    je(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
                                 break;
 
             case JNE_COMMAND:   jne(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
@@ -206,26 +208,53 @@ void execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PRO
 
             case SQRT_COMMAND:  squ1rt(&stack_info);
                                 break;
-
-            case PUSHM_COMMAND: pushm(&stack_info, processor_stack);
-                                break;
-
-            case POPM_COMMAND:  popm(&stack_info, processor_stack);
-                                break;
                         
-            case DRAW_COMMAND:  draw(processor_stack);
-                                break;
+            case DRAWC_COMMAND:  drawc(processor_stack);
+                                 break;
+
+            case DRAWW_COMMAND:  draww(processor_stack);
+                                 break;
             
-            default:            exit(4);
+            default:            return 1;
         }
         processor_stack -> IP ++;
-
         ON_DBG_PROC(dump(processor_stack, file_info);)
+    }
+    return 0;
+}
+
+void push(stack_info_t* stack_info, processor_stack_t* processor_stack) {
+
+    if ((processor_stack -> buffer[processor_stack -> IP] >> 5 & 1) == 1) {
+        processor_stack -> IP += 1;
+        stack_push(stack_info, processor_stack -> buffer[processor_stack -> IP]);
+        return;
+    }
+
+    if ((processor_stack -> buffer[processor_stack -> IP] >> 6 & 1) == 1) {
+        processor_stack -> IP += 1;
+        pushr(stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP]);
+        return;
+    }
+
+    if ((processor_stack -> buffer[processor_stack -> IP] >> 7 & 1) == 1) {
+        pushm(stack_info, processor_stack);
+        return;
     }
 }
 
-void push(stack_info_t* stack_info, int x) {
-    stack_push(stack_info, x);
+void pop(stack_info_t* stack_info, processor_stack_t* processor_stack) {
+
+    if ((processor_stack -> buffer[processor_stack -> IP] >> 6 & 1) == 1) {
+        processor_stack -> IP += 1;
+        popr(stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP]);
+        return;
+    }
+
+    if ((processor_stack -> buffer[processor_stack -> IP] >> 7 & 1) == 1) {
+        popm(stack_info, processor_stack);
+        return;
+    } 
 }
 
 void add(stack_info_t* stack_info) {
@@ -274,8 +303,7 @@ void out(stack_info_t* stack_info) {
 }
 
 void hlt(stack_info_t* stack_info) {
-    // stack_destroy(stack_info);
-    exit(0);
+    stack_destroy(stack_info);
 }
 
 void popr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number) {
@@ -455,7 +483,7 @@ void pushm(stack_info_t* stack_info, processor_stack_t* processor_stack) {
     stack_push(stack_info, x);
 }
 
-void draw(processor_stack_t* processor_stack) {
+void drawc(processor_stack_t* processor_stack) {
 
     for (int i = 0; i < sqrt(MAX_SIZE_RAM); i++) {
         for (int j = 0; j < sqrt(MAX_SIZE_RAM); j++) {
@@ -465,9 +493,31 @@ void draw(processor_stack_t* processor_stack) {
     }
 }
 
+void draww(processor_stack_t* processor_stack) {
+    
+    InitWindow(520, 520, "My picture");
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+
+        ClearBackground(BLACK);
+        for (int i = 0; i < sqrt(MAX_SIZE_RAM); i++) {
+            for (int j = 0; j < sqrt(MAX_SIZE_RAM); j++) {
+                Color myColor = {processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], 255};
+                DrawRectangle(j * 10 - 5, i * 10 - 5, j * 10 + 5, i * 10 + 5, myColor);
+            }
+        }
+
+        EndDrawing();
+    }
+    
+
+    CloseWindow();
+}
+
 void dump(processor_stack_t* processor_stack, file_info_t* file_info) {
 
-    printf(GREEN "Name of exe file: %s\n", file_info -> name_file_in);
+    printf(TERM_GREEN  "Name of exe file: %s\n", file_info -> name_file_in);
 
     printf("REGISTER ARRAY:\n");
     for (int i = 0; i < NUMBER_REGISTERS; i++) {
@@ -485,22 +535,21 @@ void dump(processor_stack_t* processor_stack, file_info_t* file_info) {
 
     for (int i = 0; i <= file_info -> last_buffer_index; i++) {
         if (i == processor_stack -> IP) {
-            printf(RED "%d " RESET, processor_stack -> buffer[i]);
+            printf(TERM_RED "%d " TERM_RESET, processor_stack -> buffer[i]);
         }
         else {
-            printf(RESET "%d ", processor_stack -> buffer[i]);
+            printf(TERM_RESET "%d ", processor_stack -> buffer[i]);
         }
     }
     printf("\n\n");
 
 
-    for (int i = 0; i < MAX_SIZE_RAM; i++) {
-        printf(RESET "%d ", processor_stack -> ram[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < MAX_SIZE_RAM; i++) {
+    //     printf(TERM_RESET "%d ", processor_stack -> ram[i]);
+    // }
+    // printf("\n");
 
-    printf(RESET "--------------------------\n");
+    printf(TERM_RESET "--------------------------\n");
     getchar();
     
 }
-
