@@ -1,5 +1,4 @@
-
-void djb_2_hash(const char* str, unsigned int len);
+#include <cstdint>
 
 enum commands_t {
 
@@ -9,8 +8,6 @@ enum commands_t {
     SUB_COMMAND =   3,
     DIV_COMMAND =   4,
     OUT_COMMAND =   5,
-    POPR_COMMAND =  6, 
-    PUSHR_COMMAND = 7,
     MUL_COMMAND =   8,
     MARK_COMMAND =  9,
     JA_COMMAND =    10,
@@ -24,13 +21,10 @@ enum commands_t {
     CALL_COMMAND =  18,
     RET_COMMAND =   19, 
     SQRT_COMMAND =  20,
-    PUSHM_COMMAND = 21,
-    POPM_COMMAND =  22,
     DRAWC_COMMAND = 23,
     POP_COMMAND =   24,
     DRAWW_COMMAND = 25,
-
-    SUCCESS_COMMAND = 100,
+    
     ERROR_COMMAND = -1
 };
 
@@ -43,48 +37,34 @@ struct command_info_t {
 
     const char* name_command;
     commands_t command;
+    const uint32_t hash_command;
 };
 
-const int AMOUNT_COMMAND =  27;
+const int AMOUNT_COMMAND =  21;
 const int NUMBER_REGISTER = 4;
 
 registor_t REGISTORS_ARRAY[NUMBER_REGISTER] = {{"AX", 1}, {"BX", 2}, {"CX", 3}, {"DX", 4}};
 
-void djb_2_hash(const char* str, unsigned int len) {
-    
-    unsigned long hash = 5381;
-    for (int i = 0; i < len; i++) {
-        hash = (hash << 5 + hash) + *(str + i);
-    }
-    return hash; 
-    
-}
-
 command_info_t COMMAND_ARRAY[AMOUNT_COMMAND] = {
-    { "HLT",     HLT_COMMAND},
-    { "PUSH",    PUSH_COMMAND},
-    { "ADD",     ADD_COMMAND},
-    { "SUB",     SUB_COMMAND},
-    { "DIV",     DIV_COMMAND},
-    { "OUT",     OUT_COMMAND},
-    { "POPR",    POPR_COMMAND},
-    { "PUSHR",   PUSHR_COMMAND},
-    { "MUL",     MUL_COMMAND},
-    { ":",       MARK_COMMAND},
-    { "JA",      JA_COMMAND},
-    { "JAE",     JAE_COMMAND},
-    { "JB",      JB_COMMAND},
-    { "JBE",     JBE_COMMAND},
-    { "JE",      JE_COMMAND},
-    { "JNE",     JNE_COMMAND},
-    { "JMP",     JMP_COMMAND},
-    { "IN",      IN_COMMAND},
-    { "CALL",    CALL_COMMAND},
-    { "RET",     RET_COMMAND},
-    { "SQRT",    SQRT_COMMAND},
-    { "PUSHM",   PUSHM_COMMAND},
-    { "POPM",    POPM_COMMAND},
-    { "DRAWC",   DRAWC_COMMAND},
-    { "POP",     POP_COMMAND},
-    { "DRAWW",   DRAWW_COMMAND},
-    { "ERROR",   ERROR_COMMAND} };
+    { "PUSH",  PUSH_COMMAND,  0x7C8A6265u },
+    { "DRAWC", DRAWC_COMMAND, 0x0CFB9976u },
+    { "JNE",   JNE_COMMAND,   0x0B87F802u },
+    { "ADD",   ADD_COMMAND,   0x0B87D06Eu },
+    { "RET",   RET_COMMAND,   0x0B8818F0u },
+    { "MUL",   MUL_COMMAND,   0x0B8805B3u },
+    { "JB",    JB_COMMAND,    0x00597411u },
+    { "CALL",  CALL_COMMAND,  0x7C82EB81u },
+    { "SQRT",  SQRT_COMMAND,  0x7C8BF66Fu },
+    { "IN",    IN_COMMAND,    0x005973FCu },
+    { "JAE",   JAE_COMMAND,   0x0B87F655u },
+    { "DIV",   DIV_COMMAND,   0x0B87DDE8u },
+    { "JE",    JE_COMMAND,    0x00597414u },
+    { "OUT",   OUT_COMMAND,   0x0B880E3Du },
+    { "JBE",   JBE_COMMAND,   0x0B87F676u },
+    { "DRAWW", DRAWW_COMMAND, 0x0CFB998Au },
+    { "SUB",   SUB_COMMAND,   0x0B881F2Fu },
+    { "JA",    JA_COMMAND,    0x00597410u },
+    { "HLT",   HLT_COMMAND,   0x0B87EF4Du },
+    { "JMP",   JMP_COMMAND,   0x0B87F7ECu },
+    { "POP",   POP_COMMAND,   0x0B8811B4u }
+};

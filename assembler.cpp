@@ -4,10 +4,9 @@
 #include <math.h>
 #include <sys/stat.h>
 
-
 #include "enum_commands.h"
 
-#define DEBUG_ASSEMBLER_MODE
+// #define DEBUG_ASSEMBLER_MODE
 
 #ifdef DEBUG_ASSEMBLER_MODE
     #define ON_DBG_ASS(...) __VA_ARGS__
@@ -17,7 +16,7 @@
 
 const int MAXLEN_REGISTER = 3;
 const int MAXLEN_COMMAND  = 10;
-const int MAXNUM_LABEL    = 8;
+const int MAXNUM_LABEL    = 9;
 const int MAXLEN_COMMENT  = 20;
 
 struct OP_CODE
@@ -39,30 +38,31 @@ struct command_processing_t {
 
     char current_push_argument[MAXLEN_COMMAND] = {};
     int set_mark = 0;
-    int len_scanf = 0;
     int IP = 0;
     int* code_arr = NULL;
     char current_register[MAXLEN_REGISTER] = {};
     char current_comment[MAXLEN_COMMENT] = {};
     char current_command[MAXLEN_COMMAND] = {};
     int current_label_to_jump = 0; 
-     int label[MAXNUM_LABEL]= {-1, -1, -1, -1, -1, -1,-1, -1};
+    int label[MAXNUM_LABEL]= {-1, -1, -1, -1, -1, -1, -1, -1, -1};
     char colon = '0'; //двоеточие 
     OP_CODE op_code;
 };
 
-void open_file(file_info_t* file_info, const char* filename);
-
-int size_of_file(file_info_t* file_info);
-FILE* write_commands_in_file(command_processing_t* command_info);
-FILE* write_bin_commands_in_file(command_processing_t* command_info);
-int command_processing(file_info_t* file_info);
-commands_t check_command(const char* current_command);
-int check_jump_and_jump(command_processing_t* command_info, file_info_t* file_info, commands_t CURRENT_COMMAND);
-int write_number_of_register(command_processing_t* command_info, char* current_register);
-void set_command_in_array(command_processing_t* command_info, commands_t CURRENT_COMMAND);
-int check_push_and_push(command_processing_t* command_info, file_info_t* file_info);
-int check_pop_and_pop(command_processing_t* command_info, file_info_t* file_info);
+void open_file                       (file_info_t* file_info, const char* filename); 
+int size_of_file                     (file_info_t* file_info);
+FILE* write_commands_in_file         (command_processing_t* command_info);
+FILE* write_bin_commands_in_file     (command_processing_t* command_info);
+int command_processing               (file_info_t* file_info);
+commands_t check_command              (const char* current_command);
+int check_jump_and_jump              (command_processing_t* command_info, file_info_t* file_info, commands_t CURRENT_COMMAND);
+int write_number_of_register         (command_processing_t* command_info, char* current_register);
+void set_command_in_array            (command_processing_t* command_info, commands_t CURRENT_COMMAND);
+int check_push_and_push              (command_processing_t* command_info, file_info_t* file_info);
+int check_pop_and_pop                (command_processing_t* command_info, file_info_t* file_info);
+uint32_t djb_2_hash                  (const char* str, unsigned int len);
+int set_mark                         (command_processing_t* command_info);
+int comporator_quick_sort            (const void* arg1, const void* arg2);
 
 int main(int argc, const char* argv[]) {
 
@@ -103,8 +103,9 @@ int command_processing(file_info_t* file_info) {
 
     for (int i = 0; i < 2; i++) {
         command_info.IP = 0;
-        while (fscanf(file_info -> ptr_file_in,  "%s%n", command_info.current_command, &command_info.len_scanf) != EOF) {
-            printf("%s\n", command_info.current_command);
+        while (fscanf(file_info -> ptr_file_in,  "%s", command_info.current_command) != EOF) {
+            ON_DBG_ASS(printf("%s\n", command_info.current_command);)
+
             if (command_info.current_command[0] == ';') { 
                 fgets(command_info.current_comment, MAXLEN_COMMENT, file_info -> ptr_file_in);
                 continue;
@@ -136,11 +137,7 @@ int command_processing(file_info_t* file_info) {
                                     break;
 
 
-                case MARK_COMMAND: if (sscanf(command_info.current_command, "%c%d",  &command_info.colon, &command_info.set_mark) != 2) {
-                                        return 1;
-                                    }
-                                    command_info.label[command_info.set_mark] = command_info.IP;
-                                    // printf("%d\n", command_info.label[command_info.set_mark]);
+                case MARK_COMMAND:  set_mark(&command_info);
                                     break;
 
                 case JA_COMMAND:   
@@ -195,10 +192,27 @@ commands_t check_command(const char* current_command) {
 
     if (current_command[0] == ':')      return MARK_COMMAND;
 
-    for (int i = 0; i < AMOUNT_COMMAND; i++) {
-        if (strcmp(COMMAND_ARRAY[i].name_command, current_command) == 0) {
-            return COMMAND_ARRAY[i].command;
+    int left = 0;
+    int right = AMOUNT_COMMAND - 1;
+    int mid = 0;
+    int len_command = strlen(current_command);
+
+    qsort(COMMAND_ARRAY, AMOUNT_COMMAND, sizeof(command_info_t), comporator_quick_sort);
+
+    while(left <= right) {
+
+        mid  = (left + right) / 2;
+        int res = (COMMAND_ARRAY[mid].hash_command - djb_2_hash(current_command, len_command));
+
+        if (res == 0) {
+            return COMMAND_ARRAY[mid].command;
+        }        
+        else if(res > 0) {
+            right = mid - 1;
         }
+        else {
+            left = mid + 1;
+        }  
     }
     return ERROR_COMMAND;
 }
@@ -264,11 +278,11 @@ int check_push_and_push(command_processing_t* command_info, file_info_t* file_in
                 command_info -> op_code.reg = 1; 
         }
         else {
-            return 0;
+            return 1;
         }
-    memcpy(&command_info -> code_arr[command_info -> IP], &command_info -> op_code, sizeof(command_info -> op_code));
-    command_info -> IP += 1; 
-    write_number_of_register(command_info , reg);
+        memcpy(&command_info -> code_arr[command_info -> IP], &command_info -> op_code, sizeof(command_info -> op_code));
+        command_info -> IP += 1; 
+        write_number_of_register(command_info , reg);
     }
 
     command_info -> IP += 1;
@@ -299,5 +313,39 @@ int check_pop_and_pop(command_processing_t* command_info, file_info_t* file_info
     write_number_of_register(command_info , reg);
 
     command_info -> IP += 1;
+    return 0;
+}
+
+uint32_t djb_2_hash(const char* str, unsigned int len) {
+    
+    uint32_t hash = 5381;
+    for (unsigned int i = 0; i < len; i++) {
+        hash = ((hash << 5) + hash) + *(str + i);
+    }
+    return hash; 
+}
+
+int set_mark (command_processing_t* command_info) {
+
+    if (sscanf(command_info -> current_command, "%c%d",  &command_info -> colon, &command_info -> set_mark) != 2) {
+        return 1;
+    }
+    command_info -> label[command_info -> set_mark] = command_info -> IP;
+    return 0;
+}
+
+int comporator_quick_sort(const void* arg1, const void* arg2) {
+
+    const command_info_t* first_arg = (const command_info_t*)arg1;
+    const command_info_t* second_arg = (const command_info_t*)arg2;
+
+    if (first_arg -> hash_command < second_arg -> hash_command) {
+        return -1;
+    }
+
+    if (first_arg->hash_command > second_arg->hash_command) {
+        return 1;
+    }
+
     return 0;
 }

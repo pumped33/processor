@@ -1,19 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h> 
 #include <unistd.h>  
-#include "stack_test.cpp"
 
-#undef DEBUG_MODE
-
-#define GREEN "\033[32m"
-#define BLUE  "\033[34m"
-#define RED   "\033[31m"
-#define RESET "\033[37m"
 
 #include "enum_commands.h"
 

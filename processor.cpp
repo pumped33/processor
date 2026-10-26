@@ -12,9 +12,9 @@
 #undef DEBUG_MODE
 
 #define TERM_GREEN  "\033[32m"
-#define TERM_BLUE  "\033[34m"
-#define TERM_RED   "\033[31m"
-#define TERM_RESET "\033[37m"
+#define TERM_BLUE   "\033[34m"
+#define TERM_RED    "\033[31m"
+#define TERM_RESET  "\033[37m"
 
 const int NUMBER_REGISTERS            = 4;
 const int CAPACITY_STACK_CALCULATIONS = 10;
@@ -58,36 +58,35 @@ int* open_file(file_info_t* file_info, const char* filename);
 
 int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
 //processor command
-void hlt(stack_info_t* stack_info);
-void out(stack_info_t* stack_info);
-void add(stack_info_t* stack_info);
-void sub(stack_info_t* stack_info);
-void div(stack_info_t* stack_info);
-void push(stack_info_t* stack_info, processor_stack_t* processor_stack);
-void mul(stack_info_t* stack_info);
-void popr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
-void pushr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
-void ja(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jae(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jb(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jbe(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void je(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jne(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jmp(processor_stack_t* processor_stack, int adress_to_jump);
-void in(stack_info_t* stack_info);
-void call(processor_stack_t* processor_stack, int adress_jump);
-void ret(processor_stack_t* processor_stack);
-void squ1rt(stack_info_t* stack_info);
-void power(stack_info_t* stack_info);
-void pushm(stack_info_t* stack_info, processor_stack_t* processor_stack);
-void popm(stack_info_t* stack_info, processor_stack_t* processor_stack);
-void drawc(processor_stack_t* processor_stack);
-void draww(processor_stack_t* processor_stack);
-void pop(stack_info_t* stack_info, processor_stack_t* processor_stack);
+void hlt    (stack_info_t* stack_info);
+void out    (stack_info_t* stack_info);
+void add    (stack_info_t* stack_info);
+void sub    (stack_info_t* stack_info);
+void div    (stack_info_t* stack_info);
+void push   (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void mul    (stack_info_t* stack_info);
+void popr   (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
+void pushr  (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
+void ja     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jae    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jb     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jbe    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void je     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jne    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jmp    (processor_stack_t* processor_stack, int adress_to_jump);
+void in     (stack_info_t* stack_info);
+void call   (processor_stack_t* processor_stack, int adress_jump);
+void ret    (processor_stack_t* processor_stack);
+void squ1rt (stack_info_t* stack_info);
+void power  (stack_info_t* stack_info);
+void pushm  (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void popm   (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void drawc  (processor_stack_t* processor_stack);
+void draww  (processor_stack_t* processor_stack);
+void pop    (stack_info_t* stack_info, processor_stack_t* processor_stack);
 
 
-void dump(processor_stack_t* processor_stack, file_info_t* file_info);
-
+void dump   (processor_stack_t* processor_stack, file_info_t* file_info);
 
 int main(int argc, const char* argv[]) {
 
@@ -118,13 +117,14 @@ int* open_file(file_info_t* file_info, const char* filename) {
             buffer[file_info -> last_buffer_index] = elem;
             file_info -> last_buffer_index++;
         }
-        buffer = (int*)realloc(buffer, (file_info -> last_buffer_index + 1) * sizeof(int));
+         buffer = (int*)realloc(buffer, (file_info -> last_buffer_index) * sizeof(int));
     #else
         int len_buffer = fread(buffer, sizeof(int), file_info -> size_of_file_in, file_info -> ptr_file_in);
         buffer = (int*)realloc(buffer, len_buffer * sizeof(int));
-        return buffer;
     #endif 
+    return buffer;
     fclose(file_info -> ptr_file_in);
+    return 0;
 }
 
 int size_of_file(file_info_t* file_info) {
@@ -368,7 +368,7 @@ void jae(stack_info_t* stack_info, processor_stack_t* processor_stack, int adres
     stack_pop(stack_info, &x2);
 
     if (x1 <= x2) {
-        jmp(processor_stack, adress_to_jump - 1);    
+        jmp(processor_stack, adress_to_jump);    
     }
     else {
         processor_stack -> IP++;
@@ -495,15 +495,16 @@ void drawc(processor_stack_t* processor_stack) {
 
 void draww(processor_stack_t* processor_stack) {
     
-    InitWindow(520, 520, "My picture");
+    InitWindow(sqrt(MAX_SIZE_RAM) * 10 + 10, sqrt(MAX_SIZE_RAM) * 10 + 10, "My picture");
 
     while (!WindowShouldClose()) {
         BeginDrawing();
-
+        
         ClearBackground(BLACK);
         for (int i = 0; i < sqrt(MAX_SIZE_RAM); i++) {
             for (int j = 0; j < sqrt(MAX_SIZE_RAM); j++) {
-                Color myColor = {processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j], 255};
+                unsigned char color = processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j];
+                Color myColor = {color, color, color, 255};
                 DrawRectangle(j * 10 - 5, i * 10 - 5, j * 10 + 5, i * 10 + 5, myColor);
             }
         }
@@ -511,7 +512,6 @@ void draww(processor_stack_t* processor_stack) {
         EndDrawing();
     }
     
-
     CloseWindow();
 }
 
