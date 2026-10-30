@@ -9,6 +9,7 @@
 #include "stack_test.cpp"
 #include "raylib.h" 
 
+
 #undef DEBUG_MODE
 
 #define TERM_GREEN  "\033[32m"
@@ -22,6 +23,7 @@ const int MAX_SIZE_RAM                = 2601;
 const int CAPACITY_STACK_CALL =         10;
 
 #include "enum_commands.h"
+#include "read_from_file.cpp"
 
 // #define DEBUG_PROCESSOR_MODE
 
@@ -31,15 +33,6 @@ const int CAPACITY_STACK_CALL =         10;
     #define ON_DBG_PROC(...) 
 #endif
 
-// #define TXT_MODE
-
-
-struct file_info_t {
-    const char* name_file_in = "";
-    int last_buffer_index = 0;
-    FILE* ptr_file_in = NULL;
-    int size_of_file_in = 0;
-};
 
 struct processor_stack_t {
 
@@ -52,87 +45,69 @@ struct processor_stack_t {
 };
 
 //read_file_from_assembler
-int size_of_file(file_info_t* file_info);
-int* open_file(file_info_t* file_info, const char* filename);
+int  size_of_file       (file_info_t* file_info);
+int* read_from_file     (file_info_t* file_info, const char* filename);
+void open_file          (file_info_t* file_info);
 
 
-int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
+int execute_commands    (int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
 //processor command
-void hlt    (stack_info_t* stack_info);
-void out    (stack_info_t* stack_info);
-void add    (stack_info_t* stack_info);
-void sub    (stack_info_t* stack_info);
-void div    (stack_info_t* stack_info);
-void push   (stack_info_t* stack_info, processor_stack_t* processor_stack);
-void mul    (stack_info_t* stack_info);
-void popr   (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
-void pushr  (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
-void ja     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jae    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jb     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jbe    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void je     (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jne    (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
-void jmp    (processor_stack_t* processor_stack, int adress_to_jump);
-void in     (stack_info_t* stack_info);
-void call   (processor_stack_t* processor_stack, int adress_jump);
-void ret    (processor_stack_t* processor_stack);
-void squ1rt (stack_info_t* stack_info);
-void power  (stack_info_t* stack_info);
-void pushm  (stack_info_t* stack_info, processor_stack_t* processor_stack);
-void popm   (stack_info_t* stack_info, processor_stack_t* processor_stack);
-void drawc  (processor_stack_t* processor_stack);
-void draww  (processor_stack_t* processor_stack);
-void pop    (stack_info_t* stack_info, processor_stack_t* processor_stack);
-
-
-void dump   (processor_stack_t* processor_stack, file_info_t* file_info);
+void hlt                (stack_info_t* stack_info);
+void out                (stack_info_t* stack_info);
+void add                (stack_info_t* stack_info);
+void sub                (stack_info_t* stack_info);
+void div                (stack_info_t* stack_info);
+void push               (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void mul                (stack_info_t* stack_info);
+void popr               (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
+void pushr              (stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number);
+void ja                 (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jae                (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jb                 (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jbe                (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void je                 (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jne                (stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump);
+void jmp                (processor_stack_t* processor_stack, int adress_to_jump);
+void in                 (stack_info_t* stack_info);
+void call               (processor_stack_t* processor_stack, int adress_jump);
+void ret                (processor_stack_t* processor_stack);
+void squ1rt             (stack_info_t* stack_info);
+void power              (stack_info_t* stack_info);
+void pushm              (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void popm               (stack_info_t* stack_info, processor_stack_t* processor_stack);
+void drawc              (processor_stack_t* processor_stack);
+void draww              (processor_stack_t* processor_stack);
+void pop                (stack_info_t* stack_info, processor_stack_t* processor_stack);
+int* get_adress_of_arg  (stack_info_t* stack_info, processor_stack_t* processor_stack);
+// dump
+void dump               (processor_stack_t* processor_stack, file_info_t* file_info);
 
 int main(int argc, const char* argv[]) {
 
     if (argc == 2) {
         file_info_t file_info = {};
-        int* code = open_file(&file_info, argv[1]);
+        int* code = read_from_file(&file_info, argv[1]);
         processor_stack_t processor_stack = {};
-        processor_stack.last_buffer_index = file_info.last_buffer_index;
-
         execute_commands(code, &processor_stack ON_DBG_PROC(, &file_info));
+        
         return 0;
     }
-    else {
-        return 1;
-    }
+    return 1;
 }
 
-int* open_file(file_info_t* file_info, const char* filename) {
+int* read_from_file(file_info_t* file_info, const char* filename) {
 
-    file_info -> name_file_in = filename;
-    file_info -> ptr_file_in  = fopen(filename, "r");
+    open_file(file_info, filename);
     size_of_file(file_info);
-    int* buffer = (int*)calloc((size_t)(file_info -> size_of_file_in), sizeof(int));
-    int elem = 0;
     
-    #ifdef TXT_MODE
-        while(fscanf(file_info -> ptr_file_in,  "%d", &elem) == 1) {
-            buffer[file_info -> last_buffer_index] = elem;
-            file_info -> last_buffer_index++;
-        }
-         buffer = (int*)realloc(buffer, (file_info -> last_buffer_index) * sizeof(int));
-    #else
-        int len_buffer = fread(buffer, sizeof(int), file_info -> size_of_file_in, file_info -> ptr_file_in);
-        buffer = (int*)realloc(buffer, len_buffer * sizeof(int));
-    #endif 
-    return buffer;
+    int* buffer = (int*)calloc((size_t)(file_info -> size_of_file_in), sizeof(int));
+    
+    file_info -> size_of_file_in = fread(buffer, sizeof(int), file_info -> size_of_file_in, file_info -> ptr_file_in);
+
+    buffer = (int*)realloc(buffer, file_info -> size_of_file_in * sizeof(int));
+
     fclose(file_info -> ptr_file_in);
-    return 0;
-}
-
-int size_of_file(file_info_t* file_info) {
-
-    struct stat stat_file_in;
-    stat(file_info -> name_file_in, &stat_file_in);
-    file_info -> size_of_file_in = stat_file_in.st_size;
-    return 0;
+    return buffer;
 }
 
 int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info)) { 
@@ -149,7 +124,7 @@ int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC
 
     while (flag_buffer_not_end) {
 
-        switch (buffer[processor_stack -> IP] & 0b00011111) {
+        switch (buffer[processor_stack -> IP] & LOWER_FIVE_BITS) {
 
             case PUSH_COMMAND:  push(&stack_info, processor_stack);
                                 break;
@@ -223,38 +198,40 @@ int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC
     return 0;
 }
 
-void push(stack_info_t* stack_info, processor_stack_t* processor_stack) {
 
-    if ((processor_stack -> buffer[processor_stack -> IP] >> 5 & 1) == 1) {
-        processor_stack -> IP += 1;
-        stack_push(stack_info, processor_stack -> buffer[processor_stack -> IP]);
-        return;
-    }
+void push(stack_info_t* stack_info, processor_stack_t* processor_stack) { // todo one func
 
-    if ((processor_stack -> buffer[processor_stack -> IP] >> 6 & 1) == 1) {
-        processor_stack -> IP += 1;
-        pushr(stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP]);
-        return;
-    }
-
-    if ((processor_stack -> buffer[processor_stack -> IP] >> 7 & 1) == 1) {
-        pushm(stack_info, processor_stack);
-        return;
-    }
+    int* src = get_adress_of_arg(stack_info, processor_stack);
+    stack_push(stack_info, *src);
 }
 
 void pop(stack_info_t* stack_info, processor_stack_t* processor_stack) {
 
-    if ((processor_stack -> buffer[processor_stack -> IP] >> 6 & 1) == 1) {
-        processor_stack -> IP += 1;
-        popr(stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP]);
-        return;
+    int x = 0;
+    stack_pop(stack_info, &x);
+
+    int* dest = get_adress_of_arg(stack_info, processor_stack);
+    *dest = x;
+}
+
+int* get_adress_of_arg(stack_info_t* stack_info, processor_stack_t* processor_stack) {
+
+    if (processor_stack -> buffer[processor_stack -> IP] & SIXTH_BIT) {
+        processor_stack -> IP++;
+        return processor_stack -> buffer + processor_stack -> IP;
     }
 
-    if ((processor_stack -> buffer[processor_stack -> IP] >> 7 & 1) == 1) {
-        popm(stack_info, processor_stack);
-        return;
-    } 
+    if (processor_stack -> buffer[processor_stack -> IP] & SEVENTH_BIT) {
+        processor_stack -> IP++;
+        return processor_stack -> register_array + processor_stack -> buffer[processor_stack -> IP] - 1;
+    }
+
+    if (processor_stack -> buffer[processor_stack -> IP] & EIGHTH_BIT) {
+        processor_stack -> IP++;
+        return processor_stack -> ram + processor_stack -> register_array[processor_stack -> buffer[processor_stack -> IP] - 1];
+    }
+
+    return NULL;
 }
 
 void add(stack_info_t* stack_info) {
@@ -306,25 +283,11 @@ void hlt(stack_info_t* stack_info) {
     stack_destroy(stack_info);
 }
 
-void popr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number) {
-
-    int x = 0;
-    stack_pop(stack_info, &x);
-    (processor_stack -> register_array)[register_number - 1] = x;
-}
-
-void pushr(stack_info_t* stack_info, processor_stack_t* processor_stack, int register_number) {
-
-    int x =  *(processor_stack -> register_array + register_number - 1);
-    stack_push(stack_info, x);
-}
-
 void in(stack_info_t* stack_info) {
 
     int x = 0;
     scanf("%d", &x);
     stack_push(stack_info, x);
-    
 }
 
 void mul(stack_info_t* stack_info) {
@@ -423,7 +386,6 @@ void je(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress
     }
 }
 
-
 void jne(stack_info_t* stack_info, processor_stack_t* processor_stack, int adress_to_jump) {
 
     int x1 = 0;
@@ -465,24 +427,6 @@ void squ1rt(stack_info_t* stack_info) {
     stack_push(stack_info, sqrt(x));
 } 
 
-void popm(stack_info_t* stack_info, processor_stack_t* processor_stack) {
-
-    int x = 0;
-    stack_pop(stack_info, &x);
-
-    processor_stack -> IP++;
-    processor_stack -> ram[processor_stack -> register_array[processor_stack -> buffer[processor_stack -> IP] - 1]] = x;
-}
-
-void pushm(stack_info_t* stack_info, processor_stack_t* processor_stack) {
-
-    processor_stack -> IP++;
-
-    int x = 0;
-    x = processor_stack -> ram[processor_stack -> register_array[processor_stack -> buffer[processor_stack -> IP] - 1]];
-    stack_push(stack_info, x);
-}
-
 void drawc(processor_stack_t* processor_stack) {
 
     for (int i = 0; i < sqrt(MAX_SIZE_RAM); i++) {
@@ -495,6 +439,8 @@ void drawc(processor_stack_t* processor_stack) {
 
 void draww(processor_stack_t* processor_stack) {
     
+    const int block_of_pixels = 10; 
+
     InitWindow(sqrt(MAX_SIZE_RAM) * 10 + 10, sqrt(MAX_SIZE_RAM) * 10 + 10, "My picture");
 
     while (!WindowShouldClose()) {
@@ -505,13 +451,13 @@ void draww(processor_stack_t* processor_stack) {
             for (int j = 0; j < sqrt(MAX_SIZE_RAM); j++) {
                 unsigned char color = processor_stack -> ram [i * (int)sqrt(MAX_SIZE_RAM) + j];
                 Color myColor = {color, color, color, 255};
-                DrawRectangle(j * 10 - 5, i * 10 - 5, j * 10 + 5, i * 10 + 5, myColor);
+                DrawRectangle(j * block_of_pixels - block_of_pixels / 2, i * block_of_pixels - block_of_pixels / 2,
+                              j * block_of_pixels + block_of_pixels / 2, i * block_of_pixels + block_of_pixels / 2, 
+                              myColor);
             }
         }
-
         EndDrawing();
     }
-    
     CloseWindow();
 }
 
@@ -533,23 +479,24 @@ void dump(processor_stack_t* processor_stack, file_info_t* file_info) {
         processor_stack -> IP);
     }
 
-    for (int i = 0; i <= file_info -> last_buffer_index; i++) {
+    for (int i = 0; i < file_info -> size_of_file_in ; i++) {
         if (i == processor_stack -> IP) {
-            printf(TERM_RED "%d " TERM_RESET, processor_stack -> buffer[i]);
+            printf(TERM_RED "%2d " TERM_RESET, processor_stack -> buffer[i]);
         }
         else {
-            printf(TERM_RESET "%d ", processor_stack -> buffer[i]);
+            printf(TERM_RESET "%2d ", processor_stack -> buffer[i]);
         }
     }
-    printf("\n\n");
+    printf("\n");
 
-
-    // for (int i = 0; i < MAX_SIZE_RAM; i++) {
-    //     printf(TERM_RESET "%d ", processor_stack -> ram[i]);
-    // }
-    // printf("\n");
+    for (int i = 0; i < file_info -> size_of_file_in; i++) {
+        printf("%2d ", i);
+    }
+    printf("\n");
 
     printf(TERM_RESET "--------------------------\n");
     getchar();
     
 }
+
+

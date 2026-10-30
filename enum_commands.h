@@ -68,3 +68,13 @@ command_info_t COMMAND_ARRAY[AMOUNT_COMMAND] = {
     { "JMP",   JMP_COMMAND,   0x0B87F7ECu },
     { "POP",   POP_COMMAND,   0x0B8811B4u }
 };
+
+enum mask_for_bin_field_t {
+
+    SIXTH_BIT   =     0b00100000,
+    SEVENTH_BIT =     0b01000000,
+    EIGHTH_BIT  =     0b10000000,
+
+    LOWER_FIVE_BITS = 0b00011111,
+
+};
