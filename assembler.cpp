@@ -8,7 +8,7 @@
 #include "read_from_file.cpp"
 #include "comporator_qsort_hash_up.cpp"
 
-#define DEBUG_ASSEMBLER_MODE
+// #define DEBUG_ASSEMBLER_MODE
 
 #ifdef DEBUG_ASSEMBLER_MODE
     #define ON_DBG_ASS(...) __VA_ARGS__
@@ -61,8 +61,6 @@ void       set_value_to_array_as_bin_field  (command_processing_t* command_info)
 char*      read_from_file                   (file_info_t* file_info, const char* filename);
 int        assembling                       (file_info_t* file_info, const char* filename);
 
-
-
 int main(int argc, const char* argv[]) {
 
     if (argc == 2) {
@@ -102,6 +100,7 @@ int assembling(file_info_t* file_info, const char* filename) {
     write_bin_commands_in_file(&command_info);
 
     fclose(file_info -> ptr_file_in);
+    free(command_info.code_arr);
     return 0;
 }
 

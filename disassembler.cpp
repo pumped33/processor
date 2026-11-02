@@ -12,7 +12,7 @@
 
 int* read_from_file   (file_info_t* file_info, const char* filename);
 int  disassembler     (int* buffer, file_info_t* file_info);
-int  my_bsearch(int current_command);
+int  my_bsearch       (int current_command);
 
 
 int main(int argc, const char* argv[]) {
@@ -44,15 +44,11 @@ int* read_from_file(file_info_t* file_info, const char* filename) {
 
 int disassembler(int* buffer, file_info_t* file_info) {
 
-    int IP = 0;
-
     FILE* f_disassembler_out = fopen("disassembler_out.txt", "w");
 
     qsort(COMMAND_ARRAY, AMOUNT_COMMAND, sizeof(command_info_t), comporator_quick_sort_enum_up);
 
-    // for (int i = 0; i < AMOUNT_COMMAND; i++ ) {
-    //     printf("%s\n", COMMAND_ARRAY[i].name_command);
-    // }
+    int IP = 0;
     while(IP < file_info -> size_of_file_in) {
 
         int command = buffer[IP] & LOWER_FIVE_BITS;
@@ -88,8 +84,8 @@ int disassembler(int* buffer, file_info_t* file_info) {
                                 if (buffer[IP] & EIGHTH_BIT) {
                                     IP++;
                                     fprintf(f_disassembler_out, "[%d]\n", buffer[IP]);
-                                    break;
                                 }
+                                break;
 
             case POP_COMMAND:   fprintf(f_disassembler_out, "%s ", COMMAND_ARRAY[index_in_command_array].name_command);
                                 if (buffer[IP] & SEVENTH_BIT) {
@@ -100,8 +96,8 @@ int disassembler(int* buffer, file_info_t* file_info) {
                                 if (buffer[IP] & EIGHTH_BIT) {
                                     IP++;
                                     fprintf(f_disassembler_out, "[%d]\n", buffer[IP]);
-                                    break;
                                 }
+                                break;
 
             case JA_COMMAND:   
             case JAE_COMMAND:  
@@ -116,12 +112,11 @@ int disassembler(int* buffer, file_info_t* file_info) {
             case CALL_COMMAND:  IP++;
                                 fprintf(f_disassembler_out, "%s <%d>\n", COMMAND_ARRAY[index_in_command_array].name_command, buffer[IP]);
                                 break;
-
-                        
+     
             default:           
                                 return 1;
         }
-        
+
         IP++;
     }
 

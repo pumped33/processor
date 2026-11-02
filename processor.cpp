@@ -32,12 +32,12 @@ const int CAPACITY_STACK_CALL =         10;
 
 struct processor_stack_t {
 
-    int* buffer = NULL;
-    int IP = 0;
-    int register_array[NUMBER_REGISTERS] = {};
-    stack_info_t stack_func_memory = {};
-    int last_buffer_index = 0;
-    int* ram = NULL;
+    int*         buffer =                           NULL;
+    int          IP =                               0;
+    int          register_array[NUMBER_REGISTERS] = {};
+    stack_info_t stack_func_memory =                {};
+    int          last_buffer_index =                0;
+    int*         ram =                              NULL;
 };
 
 //read_file_from_assembler
@@ -46,7 +46,7 @@ int* read_from_file     (file_info_t* file_info, const char* filename);
 void open_file          (file_info_t* file_info);
 
 
-int execute_commands    (int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info));
+int execute_commands    (processor_stack_t* processor_stack, const char* filename);
 //processor command
 void hlt                (stack_info_t* stack_info);
 void out                (stack_info_t* stack_info);
@@ -81,10 +81,8 @@ void dump               (processor_stack_t* processor_stack, file_info_t* file_i
 int main(int argc, const char* argv[]) {
 
     if (argc == 2) {
-        file_info_t file_info = {};
-        int* code = read_from_file(&file_info, argv[1]);
         processor_stack_t processor_stack = {};
-        execute_commands(code, &processor_stack ON_DBG_PROC(, &file_info));
+        execute_commands(&processor_stack, argv[1]);
         
         return 0;
     }
@@ -106,21 +104,21 @@ int* read_from_file(file_info_t* file_info, const char* filename) {
     return buffer;
 }
 
-int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC(, file_info_t* file_info)) { 
+int execute_commands(processor_stack_t* processor_stack, const char* filename) { 
+
+    file_info_t file_info = {};
+    processor_stack -> buffer = read_from_file(&file_info, filename);
 
     stack_info_t stack_info = {};
     stack_init(&stack_info, CAPACITY_STACK_CALCULATIONS); 
 
-    processor_stack -> buffer = buffer;
     stack_init(&(processor_stack -> stack_func_memory), CAPACITY_STACK_CALL);
     processor_stack -> ram = (int*)calloc(MAX_SIZE_RAM, sizeof(int));
 
-
     int flag_buffer_not_end = 1;
-
     while (flag_buffer_not_end) {
 
-        switch (buffer[processor_stack -> IP] & LOWER_FIVE_BITS) {
+        switch (processor_stack -> buffer[processor_stack -> IP] & LOWER_FIVE_BITS) {
 
             case PUSH_COMMAND:  push(&stack_info, processor_stack);
                                 break;
@@ -147,25 +145,25 @@ int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC
             case MUL_COMMAND:   mul(&stack_info);
                                 break;
 
-            case JMP_COMMAND:   jmp(processor_stack, buffer[processor_stack -> IP + 1]);
+            case JMP_COMMAND:   jmp(processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JA_COMMAND:    ja(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JA_COMMAND:    ja(&stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JAE_COMMAND:   jae(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JAE_COMMAND:   jae(&stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JB_COMMAND:    jb(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JB_COMMAND:    jb(&stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JBE_COMMAND:   jbe(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JBE_COMMAND:   jbe(&stack_info, processor_stack, processor_stack ->buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JE_COMMAND:    je(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JE_COMMAND:    je(&stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
 
-            case JNE_COMMAND:   jne(&stack_info, processor_stack, buffer[processor_stack -> IP + 1]);
+            case JNE_COMMAND:   jne(&stack_info, processor_stack, processor_stack -> buffer[processor_stack -> IP + 1]);
                                 break;
                     
             case IN_COMMAND:    in(&stack_info);   
@@ -189,7 +187,7 @@ int execute_commands(int* buffer, processor_stack_t* processor_stack ON_DBG_PROC
             default:            return 1;
         }
         processor_stack -> IP ++;
-        ON_DBG_PROC(dump(processor_stack, file_info);)
+        ON_DBG_PROC(dump(processor_stack, &file_info);)
     }
     return 0;
 }
