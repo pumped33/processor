@@ -1,12 +1,8 @@
 #include <stdio.h>
 #include <math.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h> 
 #include <unistd.h>  
-#include "stack_test.cpp"
+#include "stack_LIFO.cpp"
 #include "raylib.h" 
 
 

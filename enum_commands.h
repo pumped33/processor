@@ -2,29 +2,29 @@
 
 enum commands_t {
 
-    HLT_COMMAND =   0,
-    PUSH_COMMAND =  1,
-    ADD_COMMAND =   2,
-    SUB_COMMAND =   3,
-    DIV_COMMAND =   4,
-    OUT_COMMAND =   5,
-    MUL_COMMAND =   8,
-    MARK_COMMAND =  9,
-    JA_COMMAND =    10,
-    JAE_COMMAND =   11,  
-    JB_COMMAND =    12, 
-    JBE_COMMAND =   13, 
-    JE_COMMAND =    14, 
-    JNE_COMMAND =   15, 
-    JMP_COMMAND =   16, 
-    IN_COMMAND =    17, 
-    CALL_COMMAND =  18,
-    RET_COMMAND =   19, 
-    SQRT_COMMAND =  20,
+    HLT_COMMAND   =  0,
+    PUSH_COMMAND  =  1,
+    ADD_COMMAND   =  2,
+    SUB_COMMAND   =  3,
+    DIV_COMMAND   =  4,
+    OUT_COMMAND   =  5,
+    MUL_COMMAND   =  8,
+    MARK_COMMAND  =  9,
+    JA_COMMAND    = 10,
+    JAE_COMMAND   = 11,
+    JB_COMMAND    = 12,
+    JBE_COMMAND   = 13,
+    JE_COMMAND    = 14,
+    JNE_COMMAND   = 15,
+    JMP_COMMAND   = 16,
+    IN_COMMAND    = 17,
+    CALL_COMMAND  = 18,
+    RET_COMMAND   = 19,
+    SQRT_COMMAND  = 20,
     DRAWC_COMMAND = 23,
-    POP_COMMAND =   24,
+    POP_COMMAND   = 24,
     DRAWW_COMMAND = 25,
-    
+
     ERROR_COMMAND = -1
 };
 
@@ -66,7 +66,7 @@ command_info_t COMMAND_ARRAY[AMOUNT_COMMAND] = {
     { "JA",    JA_COMMAND,    0x00597410u },
     { "HLT",   HLT_COMMAND,   0x0B87EF4Du },
     { "JMP",   JMP_COMMAND,   0x0B87F7ECu },
-    { "POP",   POP_COMMAND,   0x0B8811B4u }
+    { "POP",   POP_COMMAND,   0x0B8811B4u },
 };
 
 enum mask_for_bin_field_t {
