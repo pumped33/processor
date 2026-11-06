@@ -3,75 +3,19 @@
 #include <string.h>
 #include <math.h>
 #include <sys/stat.h>
-
+//GetTickCount - windows.h or txlib.h
 #include "enum_commands.h"
 #include "read_from_file.cpp"
 #include "comporator_qsort_hash_up.cpp"
+#include "assembler.h"
 
-// #define DEBUG_ASSEMBLER_MODE
+#define DEBUG_ASSEMBLER_MODE
 
 #ifdef DEBUG_ASSEMBLER_MODE
     #define ON_DBG_ASS(...) __VA_ARGS__
 #else
     #define ON_DBG_ASS(...) 
 #endif
-
-const int MAXLEN_REGISTER = 3;
-const int MAXLEN_COMMAND  = 12;
-const int MAXNUM_LABEL    = 9;
-const int MAXLEN_COMMENT  = 20;
-
-struct OP_CODE
-{
-    unsigned int op    :5;
-    unsigned int konst :1;  
-    unsigned int reg   :1;  
-    unsigned int mem   :1;
-};
-
-struct command_processing_t {
-
-    char        current_push_argument[MAXLEN_COMMAND]  = {};
-    int         set_mark                               = 0;
-    int         IP                                     = 0;
-    int*        code_arr                               = NULL;
-    char        current_register[MAXLEN_REGISTER]      = {};
-    char        current_comment[MAXLEN_COMMENT]        = {};
-    char        current_command[MAXLEN_COMMAND]        = {};
-    int         current_label_to_jump                  = 0; 
-    int         label[MAXNUM_LABEL]                    = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
-    char        colon                                  = '0'; //двоеточие 
-    OP_CODE     op_code                                = {};
-    char*       current_ptr_code                       = NULL;
-    int         len_sscanf                             = 0;
-
-};
-
-FILE*      write_commands_in_file           (command_processing_t* command_info);
-FILE*      write_bin_commands_in_file       (command_processing_t* command_info);
-int        command_processing               (command_processing_t* command_info, char* code);
-commands_t check_command                    (const char* current_command);
-int        check_jump_and_jump              (command_processing_t* command_info, commands_t CURRENT_COMMAND);
-int        write_number_of_register         (command_processing_t* command_info, char* current_register);
-void       set_command_in_array             (command_processing_t* command_info, commands_t CURRENT_COMMAND);
-int        check_push_or_pop_and_do         (command_processing_t* command_info, commands_t CURRENT_COMMAND);
-uint32_t   djb_2_hash                       (const char* str, unsigned int len);
-int        set_mark_to_label_arr            (command_processing_t* command_info);
-void       set_value_to_array_as_bin_field  (command_processing_t* command_info);
-char*      read_from_file                   (file_info_t* file_info, const char* filename);
-int        assembling                       (file_info_t* file_info, const char* filename);
-
-int main(int argc, const char* argv[]) {
-
-    if (argc == 2) {
-        file_info_t file_info = {};
-        assembling(&file_info, argv[1]);
-        return 0;
-    }
-    else {
-        return 1;
-    }
-}
 
 char* read_from_file(file_info_t* file_info, const char* filename) {
 
@@ -93,7 +37,8 @@ int assembling(file_info_t* file_info, const char* filename) {
     command_processing_t command_info = {};
     command_info.code_arr = (int*)calloc(file_info -> size_of_file_in , sizeof(int));
 
-    if (command_processing(&command_info, code)) return 1;
+    qsort(COMMAND_ARRAY, AMOUNT_COMMAND, sizeof(command_info_t), comporator_quick_sort_hash_up);
+    if (command_processing(&command_info, code)) return 1; //return signal if one compile
         command_processing(&command_info, code);
 
     ON_DBG_ASS(write_commands_in_file(&command_info);)
@@ -101,13 +46,14 @@ int assembling(file_info_t* file_info, const char* filename) {
 
     fclose(file_info -> ptr_file_in);
     free(command_info.code_arr);
+
     return 0;
 }
 
 int command_processing(command_processing_t* command_info, char* code) {
 
     command_info -> current_ptr_code = code;
-    command_info -> IP = 0;
+    command_info -> IP               = 0;
 
     while (sscanf(command_info -> current_ptr_code, "%s%n", command_info -> current_command, &command_info -> len_sscanf) == 1) {         
         command_info -> current_ptr_code += command_info -> len_sscanf; 
@@ -144,7 +90,7 @@ int command_processing(command_processing_t* command_info, char* code) {
                                 check_push_or_pop_and_do(command_info, command); 
                                 break;
         
-            case MARK_COMMAND:  set_mark_to_label_arr(command_info);
+            case MARK_COMMAND:  set_mark_to_label_arr(command_info); //mark -> label
                                 break;
 
             case JA_COMMAND:   
@@ -193,14 +139,12 @@ FILE* write_bin_commands_in_file(command_processing_t* command_info) {
 
 commands_t check_command(const char* current_command) {
 
-    if (current_command[0] == ':')      return MARK_COMMAND;
+    if (current_command[0] == ':')        return MARK_COMMAND;
 
-    int left = 0;
+    int left  = 0;
     int right = AMOUNT_COMMAND - 1;
-    int mid = 0;
+    int mid   = 0;
     int len_command = strlen(current_command);
-
-    qsort(COMMAND_ARRAY, AMOUNT_COMMAND, sizeof(command_info_t), comporator_quick_sort_hash_up);
 
     while(left <= right) { //equal to bsearch()
 
@@ -214,7 +158,7 @@ commands_t check_command(const char* current_command) {
             right = mid - 1;
         }
         else {
-            left = mid + 1;
+            left  = mid + 1;
         }  
     }
     return ERROR_COMMAND;
@@ -230,7 +174,7 @@ int check_jump_and_jump(command_processing_t* command_info, commands_t CURRENT_C
     }
     command_info -> current_ptr_code += command_info -> len_sscanf + 1; 
                                 
-    if (command_info -> colon == ':') { 
+    if (command_info -> colon == ':') { //if label_arr -1. if return -1 and continue to define nesessary of second-pass
         command_info -> code_arr[command_info -> IP] = (command_info -> label)[command_info -> current_label_to_jump];
         command_info -> IP++;
         return 0;
@@ -316,7 +260,6 @@ int set_mark_to_label_arr(command_processing_t* command_info) {
     command_info -> label[command_info -> set_mark] = command_info -> IP;
     return 0;
 }
-
 
 void set_value_to_array_as_bin_field(command_processing_t* command_info) {
 

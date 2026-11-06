@@ -30,20 +30,23 @@ enum commands_t {
 
 struct registor_t {
     const char* name_registor;
-    int num_registor;
+    int         num_registor;
 };
 
 struct command_info_t {
 
-    const char* name_command;
-    commands_t command;
+    const char*    name_command;
+    commands_t     command;
     const uint32_t hash_command;
 };
 
 const int AMOUNT_COMMAND =  21;
 const int NUMBER_REGISTER = 4;
 
-registor_t REGISTORS_ARRAY[NUMBER_REGISTER] = {{"AX", 1}, {"BX", 2}, {"CX", 3}, {"DX", 4}};
+registor_t REGISTORS_ARRAY[NUMBER_REGISTER] = {{"AX", 1}, 
+                                               {"BX", 2}, 
+                                               {"CX", 3},
+                                               {"DX", 4}};
 
 command_info_t COMMAND_ARRAY[AMOUNT_COMMAND] = {
     { "PUSH",  PUSH_COMMAND,  0x7C8A6265u },
@@ -76,5 +79,5 @@ enum mask_for_bin_field_t {
     EIGHTH_BIT  =     0b10000000,
 
     LOWER_FIVE_BITS = 0b00011111,
-
+    
 };
